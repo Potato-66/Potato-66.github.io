@@ -1,0 +1,272 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Linux笔记 | Potato-66</title>
+<link rel="shortcut icon" href="https://potato-66.github.io/favicon.ico?v=1729148698209">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://potato-66.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="Linux笔记 | Potato-66 - Atom Feed" href="https://potato-66.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="1.windows terminal ssh远程免密登录
+1.1生成公钥私钥
+密码最好设置为空，否则配置后登录需要输入ssh公钥密钥才能登录
+ssh-keygen
+
+
+1.2将生成的公钥（*.pub）文件复制到远程服务器目录
+1.3将公钥追..." />
+    <meta name="keywords" content="Linux" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://potato-66.github.io">
+  <img class="avatar" src="https://potato-66.github.io/images/avatar.png?v=1729148698209" alt="">
+  </a>
+  <h1 class="site-title">
+    Potato-66
+  </h1>
+  <p class="site-description">
+    事已至此 先吃饭吧
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+        <a href="https://github.com/Potato-66" target="_blank">
+          <i class="ri-github-line"></i>
+        </a>
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              Linux笔记
+            </h2>
+            <div class="post-info">
+              <span>
+                2024-04-25
+              </span>
+              <span>
+                2 min read
+              </span>
+              
+                <a href="https://potato-66.github.io/1ggs0b5lL/" class="post-tag">
+                  # Linux
+                </a>
+              
+            </div>
+            
+              <img class="post-feature-image" src="https://potato-66.github.io/post-images/Qbyw4FrFLS.jpg" alt="">
+            
+            <div class="post-content-wrapper">
+              <div class="post-content" v-pre>
+                <h1 id="1windows-terminal-ssh远程免密登录">1.windows terminal ssh远程免密登录</h1>
+<h2 id="11生成公钥私钥">1.1生成公钥私钥</h2>
+<p><strong>密码最好设置为空</strong>，否则配置后登录需要输入ssh公钥密钥才能登录</p>
+<pre><code>ssh-keygen
+</code></pre>
+<figure data-type="image" tabindex="1"><img src="https://potato-66.github.io/post-images/1726817469609.png" alt="" loading="lazy"></figure>
+<h2 id="12将生成的公钥pub文件复制到远程服务器目录">1.2将生成的公钥（*.pub）文件复制到远程服务器目录</h2>
+<h2 id="13将公钥追加到当前登录用户pub替换成刚刚生成的公钥">1.3将公钥追加到当前登录用户，*.pub替换成刚刚生成的公钥</h2>
+<pre><code>mkdir .ssh &amp;&amp; chmod 700 .ssh
+</code></pre>
+<pre><code>touch .ssh/authorized_keys &amp;&amp; chmod 600 .ssh/authorized_keys
+</code></pre>
+<pre><code>cat *.pub &gt;&gt; .ssh/authorized_keys
+</code></pre>
+<h2 id="14配置windows-terminal">1.4配置Windows Terminal</h2>
+<p>设置-添加新配置文件-命令行填入</p>
+<pre><code>ssh 用户名@ip -p 端口 -i 私钥路径
+</code></pre>
+<figure data-type="image" tabindex="2"><img src="https://potato-66.github.io/post-images/1726817479344.png" alt="" loading="lazy"></figure>
+<h1 id="2通过window远程桌面登录linux">2.通过window远程桌面登录Linux</h1>
+<h2 id="21安装桌面环境">2.1安装桌面环境</h2>
+<p>如果远程服务运行的是桌面版Ubuntu，则跳过，如果运行的是docker，可以安装Gnome或者xfce桌面环境，根据需要二选一即可</p>
+<pre><code>sudo apt install ubuntu-desktop
+</code></pre>
+<pre><code>sudo apt install xubuntu-desktop
+</code></pre>
+<h2 id="22安装xrdp">2.2安装xrdp</h2>
+<pre><code>sudo apt install xrdp -y
+</code></pre>
+<p>远程桌面协议（rdp服务）默认使用的端口是3389，如果使用的是docker，需要将端口映射到主机，添加参数 -p 3388:3389，window远程桌面登录是需要加上对应端口号 ip:3388</p>
+<h2 id="23运行xrdp服务">2.3运行xrdp服务</h2>
+<p>查看xrdp服务是否正则运行</p>
+<pre><code>sudo systemctl status xrdp
+</code></pre>
+<p>如果没有则通过以下命令启动</p>
+<pre><code>sudo systemctl start xrdp
+</code></pre>
+<p><img src="https://potato-66.github.io/post-images/1729134581585.png" alt="" loading="lazy"><br>
+如果systemctl命令报错，可以用service命令</p>
+<pre><code>sudo service xrdp status
+sudo service xrdp start
+</code></pre>
+<figure data-type="image" tabindex="3"><img src="https://potato-66.github.io/post-images/1729134589308.png" alt="" loading="lazy"></figure>
+<h2 id="24window远程桌面登录">2.4window远程桌面登录</h2>
+<p>win+R，运行mstsc，输入Linux远程服务器ip，账号密码登录<br>
+<img src="https://potato-66.github.io/post-images/1729041107449.png" alt="window远程桌面" loading="lazy"><br>
+<img src="https://potato-66.github.io/post-images/1729134289083.png" alt="" loading="lazy"></p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#1windows-terminal-ssh%E8%BF%9C%E7%A8%8B%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95">1.windows terminal ssh远程免密登录</a>
+<ul>
+<li><a href="#11%E7%94%9F%E6%88%90%E5%85%AC%E9%92%A5%E7%A7%81%E9%92%A5">1.1生成公钥私钥</a></li>
+<li><a href="#12%E5%B0%86%E7%94%9F%E6%88%90%E7%9A%84%E5%85%AC%E9%92%A5pub%E6%96%87%E4%BB%B6%E5%A4%8D%E5%88%B6%E5%88%B0%E8%BF%9C%E7%A8%8B%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%9B%AE%E5%BD%95">1.2将生成的公钥（*.pub）文件复制到远程服务器目录</a></li>
+<li><a href="#13%E5%B0%86%E5%85%AC%E9%92%A5%E8%BF%BD%E5%8A%A0%E5%88%B0%E5%BD%93%E5%89%8D%E7%99%BB%E5%BD%95%E7%94%A8%E6%88%B7pub%E6%9B%BF%E6%8D%A2%E6%88%90%E5%88%9A%E5%88%9A%E7%94%9F%E6%88%90%E7%9A%84%E5%85%AC%E9%92%A5">1.3将公钥追加到当前登录用户，*.pub替换成刚刚生成的公钥</a></li>
+<li><a href="#14%E9%85%8D%E7%BD%AEwindows-terminal">1.4配置Windows Terminal</a></li>
+</ul>
+</li>
+<li><a href="#2%E9%80%9A%E8%BF%87window%E8%BF%9C%E7%A8%8B%E6%A1%8C%E9%9D%A2%E7%99%BB%E5%BD%95linux">2.通过window远程桌面登录Linux</a>
+<ul>
+<li><a href="#21%E5%AE%89%E8%A3%85%E6%A1%8C%E9%9D%A2%E7%8E%AF%E5%A2%83">2.1安装桌面环境</a></li>
+<li><a href="#22%E5%AE%89%E8%A3%85xrdp">2.2安装xrdp</a></li>
+<li><a href="#23%E8%BF%90%E8%A1%8Cxrdp%E6%9C%8D%E5%8A%A1">2.3运行xrdp服务</a></li>
+<li><a href="#24window%E8%BF%9C%E7%A8%8B%E6%A1%8C%E9%9D%A2%E7%99%BB%E5%BD%95">2.4window远程桌面登录</a></li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://potato-66.github.io/hNJxIVq7IN/">
+              <h3 class="post-title">
+                ExoPlayer(AndroidX Media3) 扩展ffmpeg实现音频软解码
+              </h3>
+            </a>
+          </div>
+        
+
+        
+          
+            <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+<div id="gitalk-container"></div>
+
+<script>
+
+  var gitalk = new Gitalk({
+    clientID: 'Ov23lippNVpEBVvqivFj',
+    clientSecret: 'da7ffcd5bb01e152864890bfeea25981bb7dbc31',
+    repo: 'Potato-66.github.io',
+    owner: 'Potato-66',
+    admin: ['Potato-66'],
+    id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
+    distractionFreeMode: false  // Facebook-like distraction free mode
+  })
+
+  gitalk.render('gitalk-container')
+
+</script>
+
+          
+
+          
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://potato-66.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

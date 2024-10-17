@@ -1,0 +1,274 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>默认放开root权限，使三方应用有权限执行su命令 | Potato-66</title>
+<link rel="shortcut icon" href="https://potato-66.github.io/favicon.ico?v=1729148698209">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://potato-66.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="默认放开root权限，使三方应用有权限执行su命令 | Potato-66 - Atom Feed" href="https://potato-66.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="1.将三方su程序预置到system/xbin/目录
+新增device/xxx/xxx/root目录，将三方su程序复制到目录下 [1]
+下载地址
+2.替换原生su程序
+修改device/xxx/xxx/xxx.mk
+PRODUCT_COP..." />
+    <meta name="keywords" content="Framework,Android10.0" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://potato-66.github.io">
+  <img class="avatar" src="https://potato-66.github.io/images/avatar.png?v=1729148698209" alt="">
+  </a>
+  <h1 class="site-title">
+    Potato-66
+  </h1>
+  <p class="site-description">
+    事已至此 先吃饭吧
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+        <a href="https://github.com/Potato-66" target="_blank">
+          <i class="ri-github-line"></i>
+        </a>
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              默认放开root权限，使三方应用有权限执行su命令
+            </h2>
+            <div class="post-info">
+              <span>
+                2024-09-25
+              </span>
+              <span>
+                2 min read
+              </span>
+              
+                <a href="https://potato-66.github.io/GVPlZMeNA4/" class="post-tag">
+                  # Framework
+                </a>
+              
+                <a href="https://potato-66.github.io/OIXTawkzzV/" class="post-tag">
+                  # Android10.0
+                </a>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content" v-pre>
+                <h1 id="1将三方su程序预置到systemxbin目录">1.将三方su程序预置到system/xbin/目录</h1>
+<p>新增device/xxx/xxx/root目录，将三方su程序复制到目录下 <sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup><br>
+<a href="https://github.com/Potato-66/Resource/tree/main/aosp/root">下载地址</a></p>
+<h1 id="2替换原生su程序">2.替换原生su程序</h1>
+<p>修改device/xxx/xxx/xxx.mk</p>
+<pre><code>PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/root/rootservice:/system/bin/rootservice \
+    $(LOCAL_PATH)/root/daemonsu:/system/xbin/daemonsu \
+    $(LOCAL_PATH)/root/su:/system/xbin/su \
+    $(LOCAL_PATH)/root/supolicy:/system/xbin/supolicy \
+    $(LOCAL_PATH)/root/libsupol.so:/system/lib/libsupol.so
+</code></pre>
+<h1 id="3配置selinux权限开机启动root服务">3.配置selinux权限，开机启动root服务</h1>
+<p>新增device/xxx/common/sepolicy/vendor/root.te文件</p>
+<pre><code># rootservice
+type root, domain, coredomain;
+type root_exec, exec_type, file_type, system_file_type;
+
+init_daemon_domain(root)
+</code></pre>
+<p>修改device/xxx/xxx/init.device.rc，增加开机服务</p>
+<pre><code># root
+service rootservice /system/bin/rootservice
+    user root
+    group root
+    disabled
+    oneshot
+on property:sys.boot_completed=1
+    start rootservice
+
+</code></pre>
+<p>修改device/xxx/common/sepolicy/vendor/file_contexts，添加rootservice</p>
+<pre><code>#rootservice
+/system/bin/rootservice  u:object_r:root_exec:s0
+</code></pre>
+<h1 id="4添加selinux权限">4.添加selinux权限</h1>
+<p>device/xxx/xxx/BoardConfig.mk，将selinux修改为permissive模式</p>
+<pre><code>BOARD_KERNEL_CMDLINE += selinux=1 androidboot.selinux=permissive androidboot.dtbo_idx=$(DTBO_INDEX)
+</code></pre>
+<p>抓取log，根据log提示添加相关权限</p>
+<pre><code> adb shell dmesg | grep avc
+</code></pre>
+<p><img src="https://potato-66.github.io/post-images/1728371926146.png" alt="avc log" loading="lazy"><br>
+关键字对应的属性名</p>
+<pre><code>scontext_name: root, tcontext_name: shell_exec, tclass_type: file, rules: read
+</code></pre>
+<p>根据放行公式</p>
+<pre><code>allow scontext_name tcontext_name:tclass_type rules;
+</code></pre>
+<p>生成规则如下</p>
+<pre><code>allow root shell_exec:file {read execute getattr};
+allow root system_file:file execute_no_trans;
+</code></pre>
+<p>将生成规则添加到device/xxx/common/sepolicy/vendor/root.te，编译刷机验证，重复以上步骤直到无报错信息即可</p>
+<hr class="footnotes-sep">
+<section class="footnotes">
+<ol class="footnotes-list">
+<li id="fn1" class="footnote-item"><p>xxx为对应产品目录 <a href="#fnref1" class="footnote-backref">↩︎</a></p>
+</li>
+</ol>
+</section>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#1%E5%B0%86%E4%B8%89%E6%96%B9su%E7%A8%8B%E5%BA%8F%E9%A2%84%E7%BD%AE%E5%88%B0systemxbin%E7%9B%AE%E5%BD%95">1.将三方su程序预置到system/xbin/目录</a></li>
+<li><a href="#2%E6%9B%BF%E6%8D%A2%E5%8E%9F%E7%94%9Fsu%E7%A8%8B%E5%BA%8F">2.替换原生su程序</a></li>
+<li><a href="#3%E9%85%8D%E7%BD%AEselinux%E6%9D%83%E9%99%90%E5%BC%80%E6%9C%BA%E5%90%AF%E5%8A%A8root%E6%9C%8D%E5%8A%A1">3.配置selinux权限，开机启动root服务</a></li>
+<li><a href="#4%E6%B7%BB%E5%8A%A0selinux%E6%9D%83%E9%99%90">4.添加selinux权限</a></li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://potato-66.github.io/iqmb64SnA/">
+              <h3 class="post-title">
+                Android 7.1.2 toybox增加stty指令
+              </h3>
+            </a>
+          </div>
+        
+
+        
+          
+            <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+<div id="gitalk-container"></div>
+
+<script>
+
+  var gitalk = new Gitalk({
+    clientID: 'Ov23lippNVpEBVvqivFj',
+    clientSecret: 'da7ffcd5bb01e152864890bfeea25981bb7dbc31',
+    repo: 'Potato-66.github.io',
+    owner: 'Potato-66',
+    admin: ['Potato-66'],
+    id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
+    distractionFreeMode: false  // Facebook-like distraction free mode
+  })
+
+  gitalk.render('gitalk-container')
+
+</script>
+
+          
+
+          
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://potato-66.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

@@ -1,0 +1,283 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ExoPlayer(AndroidX Media3) 扩展ffmpeg实现音频软解码 | Potato-66</title>
+<link rel="shortcut icon" href="https://potato-66.github.io/favicon.ico?v=1729148698209">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://potato-66.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="ExoPlayer(AndroidX Media3) 扩展ffmpeg实现音频软解码 | Potato-66 - Atom Feed" href="https://potato-66.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="ExoPlayer扩展ffmpeg解码器，实现自定义解码。解决视频音轨为mp2格式时，播放视频只有画面没有声音问题。
+环境准备：
+1.Ubuntu 20.04.4 LTS
+2.AndroidNDK版本r26C
+3.AndroidStudio..." />
+    <meta name="keywords" content="ExoPlayer,ffmpeg" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://potato-66.github.io">
+  <img class="avatar" src="https://potato-66.github.io/images/avatar.png?v=1729148698209" alt="">
+  </a>
+  <h1 class="site-title">
+    Potato-66
+  </h1>
+  <p class="site-description">
+    事已至此 先吃饭吧
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+        <a href="https://github.com/Potato-66" target="_blank">
+          <i class="ri-github-line"></i>
+        </a>
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              ExoPlayer(AndroidX Media3) 扩展ffmpeg实现音频软解码
+            </h2>
+            <div class="post-info">
+              <span>
+                2024-03-05
+              </span>
+              <span>
+                3 min read
+              </span>
+              
+                <a href="https://potato-66.github.io/x_QrTdtEOR/" class="post-tag">
+                  # ExoPlayer
+                </a>
+              
+                <a href="https://potato-66.github.io/fLMZEJvixZC/" class="post-tag">
+                  # ffmpeg
+                </a>
+              
+            </div>
+            
+              <img class="post-feature-image" src="https://potato-66.github.io/post-images/hNJxIVq7IN.png" alt="">
+            
+            <div class="post-content-wrapper">
+              <div class="post-content" v-pre>
+                <p>ExoPlayer扩展ffmpeg解码器，实现自定义解码。解决视频音轨为mp2格式时，播放视频只有画面没有声音问题。</p>
+<h1 id="环境准备">环境准备：</h1>
+<p>1.Ubuntu 20.04.4 LTS<br>
+2.AndroidNDK版本r26C<br>
+3.AndroidStudio 2023.1.1(配置好SDK和JDK 17.0.10)<br>
+4.ffmpeg6.0源码<br>
+5.ExoPlayer源码，AndroidX Media release分支版本</p>
+<h1 id="操作步骤">操作步骤：</h1>
+<h2 id="1下载exoplayer源码">1.下载Exoplayer源码</h2>
+<p>目前官方已废弃<a href="https://github.com/google/ExoPlayer">Exopler2</a>，代码已经迁移到<a href="https://github.com/androidx/media">AndroidX Media</a>，下载完成设置FFMPEG_MODULE_PATH变量<br>
+1.<code>git clone https://github.com/androidx/media</code><br>
+2.<code>cd media &amp;&amp; FFMPEG_MODULE_PATH=&quot;$(pwd)/libraries/decoder_ffmpeg/src/main&quot;</code><br>
+<img src="https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/67fc84a2f6944582bd52b1913d4d1f32~tplv-k3u1fbpfcp-jj-mark:3024:0:0:0:q75.awebp#?w=724&amp;h=92&amp;s=30470&amp;e=png&amp;b=310a25" alt="image.png" loading="lazy"></p>
+<h2 id="2下载ndk">2.下载NDK</h2>
+<p><a href="https://developer.android.google.cn/ndk/downloads?hl=zh-cn">官网下载NDK</a>或者通过SDKManager安装<br>
+<img src="https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/aaadb49e0c614a1783a74ea9ac685443~tplv-k3u1fbpfcp-jj-mark:3024:0:0:0:q75.awebp#?w=914&amp;h=783&amp;s=77093&amp;e=png&amp;b=fffefe" alt="image.png" loading="lazy"><br>
+下载完成后解压，设置NDK_PATH变量<br>
+1.<code>unzip android-ndk-r26c-linux.zip</code><br>
+2.<code>cd android-ndk-r26c &amp;&amp; NDK_PATH=&quot;$(pwd)&quot;</code><br>
+<img src="https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/55d6bf62168e420287ec0c8c66029e37~tplv-k3u1fbpfcp-jj-mark:3024:0:0:0:q75.awebp#?w=702&amp;h=75&amp;s=27277&amp;e=png&amp;b=310a27" alt="image.png" loading="lazy"></p>
+<h2 id="3设置编译平台">3.设置编译平台</h2>
+<h3 id="lunux为">Lunux为</h3>
+<p><code>HOST_PLATFORM=&quot;linux-x86_64&quot;</code></p>
+<h3 id="macox为">MacOX为</h3>
+<p><code>HOST_PLATFORM=&quot;darwin-x86_64&quot;</code></p>
+<h2 id="4设置最小支持android版本">4.设置最小支持Android版本</h2>
+<p>通常为项目设置的minSDK版本，NDKr26最小支持SDK为21<br>
+<code>ANDROID_ABI=23</code></p>
+<h2 id="5下载ffmpeg源码">5.下载ffmpeg源码</h2>
+<p>下载源码并设置FFMPEG_PATH变量<br>
+<code>git clone git://source.ffmpeg.org/ffmpeg &amp;&amp; \ cd ffmpeg &amp;&amp; \ git checkout release/6.0 &amp;&amp; \ FFMPEG_PATH=&quot;$(pwd)&quot;</code><br>
+<img src="https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/9f6bc5c4d74d4f11811fb162c001d211~tplv-k3u1fbpfcp-jj-mark:3024:0:0:0:q75.awebp#?w=717&amp;h=57&amp;s=17508&amp;e=png&amp;b=310a27" alt="image.png" loading="lazy"></p>
+<h2 id="6配置解码器格式">6.配置解码器格式</h2>
+<p>根据自己需要解码的格式设置，<a href="https://developer.android.com/guide/topics/media/exoplayer/supported-formats#ffmpeg-library">具体支持的解码格式参考官网</a><br>
+<code>ENABLED_DECODERS=(aac ac3 mp3 flac)</code><br>
+<img src="https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6b8c01437e7c4527bebfafe779bc3baf~tplv-k3u1fbpfcp-jj-mark:3024:0:0:0:q75.awebp#?w=1688&amp;h=917&amp;s=189890&amp;e=png&amp;b=ffffff" alt="image.png" loading="lazy"></p>
+<h2 id="7关联ffmpeg源码">7.关联ffmpeg源码</h2>
+<p>将ExoPlayer源码中ffmpeg模块jni与ffmpeg源码关联，关联成功后会在jni目录中生成一个快捷方式指向ffmpeg源码目录<br>
+1.<code>cd &quot;${FFMPEG_MODULE_PATH}/jni&quot;</code><br>
+2.<code>ln -s &quot;$FFMPEG_PATH&quot; ffmpeg</code><br>
+<img src="https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/9d516e0c345b4ec4b619d4fff9596b2a~tplv-k3u1fbpfcp-jj-mark:3024:0:0:0:q75.awebp#?w=718&amp;h=224&amp;s=57459&amp;e=png&amp;b=310a25" alt="image.png" loading="lazy"></p>
+<h2 id="8编译ffmpeg">8.编译ffmpeg</h2>
+<p>编译成功后，会在ffmepg目录下生成一个android-libs目录<br>
+<code>./build_ffmpeg.sh \   &quot;${FFMPEG_MODULE_PATH}&quot; &quot;${NDK_PATH}&quot; &quot;${HOST_PLATFORM}&quot; &quot;${ANDROID_ABI}&quot; &quot;${ENABLED_DECODERS[@]}&quot;</code><br>
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/4bc8d970fb564927ba51cdc51c960edb~tplv-k3u1fbpfcp-jj-mark:3024:0:0:0:q75.awebp#?w=753&amp;h=195&amp;s=47702&amp;e=png&amp;b=310a27" alt="image.png" loading="lazy"></p>
+<h2 id="9编译生成android项目依赖的aar包">9.编译生成Android项目依赖的aar包</h2>
+<p>退回到ExoPlayer项目工程目录执行，编译成功后会在\libraries\decoder_ffmpeg\buildout\outputs\aar\目录生成aar包<br>
+<code>./gradlew lib-decoder-ffmpeg:assembleRelease</code><br>
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/789d38c126ff4b4cbe4582d5c2c7fd22~tplv-k3u1fbpfcp-jj-mark:3024:0:0:0:q75.awebp#?w=751&amp;h=130&amp;s=33266&amp;e=png&amp;b=310a25" alt="image.png" loading="lazy"></p>
+<h2 id="10项目使用">10.项目使用</h2>
+<p>复制生成的aar包到项目libs目录，修改app下的build.gradle文件，引用aar包<br>
+<code>implementation(files(&quot;libs/extension-ffmpeg-release.aar&quot;))</code><br>
+自定义DefaultRenderersFactory，构造ExoPlayer实例时传入，日志中有ffmpeg相关信息代表加载成功。</p>
+<figure data-type="image" tabindex="1"><img src="https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/4a032dcb8f514227896b9c95214011c9~tplv-k3u1fbpfcp-jj-mark:3024:0:0:0:q75.awebp#?w=822&amp;h=743&amp;s=69163&amp;e=png&amp;b=2b2b2b" alt="image.png" loading="lazy"></figure>
+<figure data-type="image" tabindex="2"><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/1ae1e222a9ee4a3b96b3ed76c5a31fb9~tplv-k3u1fbpfcp-jj-mark:3024:0:0:0:q75.awebp#?w=1723&amp;h=322&amp;s=95753&amp;e=png&amp;b=2b2b2b" alt="image.png" loading="lazy"></figure>
+<h2 id="11常见问题">11.常见问题</h2>
+<p>1.shell变量属于临时设置，只在当前窗口生效，新打开命令窗口后需要重新设置，运行build_ffmpeg.sh脚本时会打印相关变量信息，注意查看是否正确。<br>
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/0137935b271c4cbf98258ae302fe63a5~tplv-k3u1fbpfcp-jj-mark:3024:0:0:0:q75.awebp#?w=753&amp;h=182&amp;s=45381&amp;e=png&amp;b=310a25" alt="image.png" loading="lazy"><br>
+2.编译ffmpeg源码和生成aar时NDK最好保持一致，否则生成aar包时可能报错。<br>
+3.编译时下载Gradle和同步Maven库很慢或超时可以设置国内镜像源，参考<a href="https://juejin.cn/post/7342067642882179106">AndroidStudio配置腾讯镜像地址</a><br>
+4.教程参考官方开发者指南<a href="https://github.com/androidx/media/blob/release/libraries/decoder_ffmpeg/README.md">README.md</a>。</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#%E7%8E%AF%E5%A2%83%E5%87%86%E5%A4%87">环境准备：</a></li>
+<li><a href="#%E6%93%8D%E4%BD%9C%E6%AD%A5%E9%AA%A4">操作步骤：</a>
+<ul>
+<li><a href="#1%E4%B8%8B%E8%BD%BDexoplayer%E6%BA%90%E7%A0%81">1.下载Exoplayer源码</a></li>
+<li><a href="#2%E4%B8%8B%E8%BD%BDndk">2.下载NDK</a></li>
+<li><a href="#3%E8%AE%BE%E7%BD%AE%E7%BC%96%E8%AF%91%E5%B9%B3%E5%8F%B0">3.设置编译平台</a>
+<ul>
+<li><a href="#lunux%E4%B8%BA">Lunux为</a></li>
+<li><a href="#macox%E4%B8%BA">MacOX为</a></li>
+</ul>
+</li>
+<li><a href="#4%E8%AE%BE%E7%BD%AE%E6%9C%80%E5%B0%8F%E6%94%AF%E6%8C%81android%E7%89%88%E6%9C%AC">4.设置最小支持Android版本</a></li>
+<li><a href="#5%E4%B8%8B%E8%BD%BDffmpeg%E6%BA%90%E7%A0%81">5.下载ffmpeg源码</a></li>
+<li><a href="#6%E9%85%8D%E7%BD%AE%E8%A7%A3%E7%A0%81%E5%99%A8%E6%A0%BC%E5%BC%8F">6.配置解码器格式</a></li>
+<li><a href="#7%E5%85%B3%E8%81%94ffmpeg%E6%BA%90%E7%A0%81">7.关联ffmpeg源码</a></li>
+<li><a href="#8%E7%BC%96%E8%AF%91ffmpeg">8.编译ffmpeg</a></li>
+<li><a href="#9%E7%BC%96%E8%AF%91%E7%94%9F%E6%88%90android%E9%A1%B9%E7%9B%AE%E4%BE%9D%E8%B5%96%E7%9A%84aar%E5%8C%85">9.编译生成Android项目依赖的aar包</a></li>
+<li><a href="#10%E9%A1%B9%E7%9B%AE%E4%BD%BF%E7%94%A8">10.项目使用</a></li>
+<li><a href="#11%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98">11.常见问题</a></li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+
+        
+          
+            <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+<div id="gitalk-container"></div>
+
+<script>
+
+  var gitalk = new Gitalk({
+    clientID: 'Ov23lippNVpEBVvqivFj',
+    clientSecret: 'da7ffcd5bb01e152864890bfeea25981bb7dbc31',
+    repo: 'Potato-66.github.io',
+    owner: 'Potato-66',
+    admin: ['Potato-66'],
+    id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
+    distractionFreeMode: false  // Facebook-like distraction free mode
+  })
+
+  gitalk.render('gitalk-container')
+
+</script>
+
+          
+
+          
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://potato-66.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

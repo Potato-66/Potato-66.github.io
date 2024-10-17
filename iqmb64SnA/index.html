@@ -1,0 +1,278 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Android 7.1.2 toybox增加stty指令 | Potato-66</title>
+<link rel="shortcut icon" href="https://potato-66.github.io/favicon.ico?v=1729148698209">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://potato-66.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="Android 7.1.2 toybox增加stty指令 | Potato-66 - Atom Feed" href="https://potato-66.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="1.下载toybox源码
+根据实际需要下载对应版本，我下载的是0.8.0
+git clone https://github.com/landley/toybox.git
+
+2.编译stty源码
+2.1 将下载的toybox源码中的toys/..." />
+    <meta name="keywords" content="Android 7.1,Framework" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://potato-66.github.io">
+  <img class="avatar" src="https://potato-66.github.io/images/avatar.png?v=1729148698209" alt="">
+  </a>
+  <h1 class="site-title">
+    Potato-66
+  </h1>
+  <p class="site-description">
+    事已至此 先吃饭吧
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+        <a href="https://github.com/Potato-66" target="_blank">
+          <i class="ri-github-line"></i>
+        </a>
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              Android 7.1.2 toybox增加stty指令
+            </h2>
+            <div class="post-info">
+              <span>
+                2024-09-20
+              </span>
+              <span>
+                3 min read
+              </span>
+              
+                <a href="https://potato-66.github.io/ayNoPQ4eZT/" class="post-tag">
+                  # Android 7.1
+                </a>
+              
+                <a href="https://potato-66.github.io/GVPlZMeNA4/" class="post-tag">
+                  # Framework
+                </a>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content" v-pre>
+                <h1 id="1下载toybox源码">1.下载toybox源码</h1>
+<p>根据实际需要下载对应版本，我下载的是0.8.0</p>
+<pre><code>git clone https://github.com/landley/toybox.git
+</code></pre>
+<h1 id="2编译stty源码">2.编译stty源码</h1>
+<p>2.1 将下载的toybox源码中的toys/pending/stty.c复制到external/toybox/toys/pending/目录<br>
+2.2 修改external/toybox/Android.mk，编译stty.c，添加对应快捷方式(<strong>根据首字母位置按顺序添加</strong>)</p>
+<pre><code>LOCAL_SRC_FILES := \
+    xxxx
+    toys/pending/route.c \
+    toys/pending/stty.c \
+    toys/pending/tar.c \
+    xxxx
+</code></pre>
+<pre><code>ALL_TOOLS := \
+    xxxx
+    stat \
+    stty \
+    strings \
+    xxxx
+</code></pre>
+<p>2.3 修改external/toybox/generated/config.h，external/toybox/generated/flags.h，增加stty相关宏定义</p>
+<pre><code>#define CFG_STAT 1
+#define USE_STAT(...) __VA_ARGS__
+#define CFG_STTY 1
+#define USE_STTY(...) __VA_ARGS__
+#define CFG_SWAPOFF 1
+#define USE_SWAPOFF(...) __VA_ARGS__
+</code></pre>
+<pre><code>#ifdef FOR_stty
+#ifndef TT
+#define TT this.stty
+#endif
+#define FLAG_g (1&lt;&lt;0)
+#define FLAG_F (1&lt;&lt;1)
+#define FLAG_a (1&lt;&lt;2)
+#endif
+</code></pre>
+<p>2.4 修改external/toybox/generated/globals.h，定义stty结构体</p>
+<pre><code>// toys/pending/stty.c
+struct stty_data {
+    char *device;
+
+    int fd, col;
+    unsigned output_cols;
+};
+struct sulogin_data {
+    xxxx
+    struct strings_data strings;
+    struct stty_data stty;
+    struct tail_data tail;
+    xxxx
+}
+</code></pre>
+<p>2.5 修改external/toybox/generated/help.h，增加stty --help命令</p>
+<pre><code>#define HELP_stty &quot;usage: stty [-ag] [-F device] SETTING...\n\nGet/set terminal configuration.\n\n-F	Open device instead of stdin\n-a	Show all current settings (default differences from \&quot;sane\&quot;)\n-g	Show all current settings usable as input to stty\n\nSpecial characters (syntax ^c or undef): intr quit erase kill eof eol eol2\nswtch start stop susp rprnt werase lnext discard\n\nControl/input/output/local settings as shown by -a, '-' prefix to disable\n\nCombo settings: cooked/raw, evenp/oddp/parity, nl, ek, sane\n\nN	set input and output speed (ispeed N or ospeed N for just one)\ncols N	set number of columns\nrows N	set number of rows\nline N	set line discipline\nmin N	set minimum chars per read\ntime N	set read timeout\nspeed	show speed only\nsize	show size only\n\n&quot;
+</code></pre>
+<p>2.6 修改external/toybox/generated/newtoys.h</p>
+<pre><code>xxxx
+USE_STRINGS(NEWTOY(strings, &quot;an#=4&lt;1fo&quot;, TOYFLAG_USR|TOYFLAG_BIN))
+USE_STTY(NEWTOY(stty, &quot;?aF:g[!ag]&quot;, TOYFLAG_BIN))
+USE_SU(NEWTOY(su, &quot;lmpc:s:&quot;, TOYFLAG_BIN|TOYFLAG_ROOTONLY))
+xxxx
+</code></pre>
+<h1 id="3编译刷机验证">3编译刷机验证</h1>
+<figure data-type="image" tabindex="1"><img src="https://potato-66.github.io/post-images/1728379808075.png" alt="stty" loading="lazy"></figure>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#1%E4%B8%8B%E8%BD%BDtoybox%E6%BA%90%E7%A0%81">1.下载toybox源码</a></li>
+<li><a href="#2%E7%BC%96%E8%AF%91stty%E6%BA%90%E7%A0%81">2.编译stty源码</a></li>
+<li><a href="#3%E7%BC%96%E8%AF%91%E5%88%B7%E6%9C%BA%E9%AA%8C%E8%AF%81">3编译刷机验证</a></li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://potato-66.github.io/vY9RnZ3hY4/">
+              <h3 class="post-title">
+                adb shell连接时增加密码验证
+              </h3>
+            </a>
+          </div>
+        
+
+        
+          
+            <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+<div id="gitalk-container"></div>
+
+<script>
+
+  var gitalk = new Gitalk({
+    clientID: 'Ov23lippNVpEBVvqivFj',
+    clientSecret: 'da7ffcd5bb01e152864890bfeea25981bb7dbc31',
+    repo: 'Potato-66.github.io',
+    owner: 'Potato-66',
+    admin: ['Potato-66'],
+    id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
+    distractionFreeMode: false  // Facebook-like distraction free mode
+  })
+
+  gitalk.render('gitalk-container')
+
+</script>
+
+          
+
+          
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://potato-66.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>
